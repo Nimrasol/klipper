@@ -15,14 +15,15 @@
 // application checksum it contains matches the flash contents.  After
 // an update the bootloader leaves an "update done" status and relies on
 // the application to restore "app normal" (as the stock firmware does
-// on every boot).  Requesting the "update start" status and resetting
-// makes the bootloader wait for a new image from the display.
+// on every boot).  After a reset the bootloader waits a few seconds for
+// a new update header (SACP command 0xad/0x01, as the stock display sends
+// it) before it starts the application; a bootloader request therefore
+// only resets.  The bootloader never erases or writes its own pages.
 
 #define HDR_ADDR 0x080FD000      // Update info header (4KiB flash page)
 #define HDR_SIZE 101             // sizeof(update_packet_info_t)
 #define HDR_STATUS_OFFSET 81
 #define HDR_CHECKSUM_OFFSET 97
-#define STATUS_UPDATE_START 0xAA02
 #define STATUS_APP_NORMAL 0xAA05
 
 // Pages above 512KiB are in the second flash bank, which has its own
@@ -107,12 +108,11 @@ snapmaker_boot_init(void)
 }
 DECL_INIT(snapmaker_boot_init);
 
-// Reboot into the factory bootloader and wait for a new image
+// Reboot into the factory bootloader (scripts/snapmaker_j1_flash.py of
+// KlipperSnapmakerJ1 then sends the new image)
 void
 snapmaker_bootloader_request(void)
 {
-    if (header_is_valid())
-        write_header_status(STATUS_UPDATE_START);
     irq_disable();
     NVIC_SystemReset();
 }
