@@ -58,6 +58,8 @@ gpio_clock_enable(GPIO_TypeDef *regs)
     RCC->APB2ENR;
 }
 
+#if !CONFIG_MACH_GD32F305
+
 // PLL (f103) input: 1 to 25Mhz, output: 16 to 72Mhz
 
 // Main clock setup called at chip startup
@@ -184,6 +186,52 @@ clock_setup_n32g45x(void)
     while ((RCC->CFGR & RCC_CFGR_SWS_Msk) != RCC_CFGR_SWS_PLL)
         ;
 }
+
+#else // CONFIG_MACH_GD32F305
+
+  #if CONFIG_CLOCK_REF_FREQ != 25000000 || CONFIG_CLOCK_FREQ != 120000000
+    #error "The gd32f305 is only supported with a 25Mhz crystal at 120Mhz"
+  #endif
+  #if CONFIG_USB
+    #error "USB is not supported on the gd32f305"
+  #endif
+
+// The gd32f305 uses the stm32f105 "connectivity line" clock tree (the
+// main PLL is fed from PREDIV1, which is fed from PLL2), but runs at
+// 120Mhz with a main PLL multiplier the stm32f105 does not support
+static void
+clock_setup_gd32f305(void)
+{
+    // PLL2 = 25Mhz / 5 * 10 = 50Mhz, PREDIV1 = PLL2 / 5 = 10Mhz
+    RCC->CR |= RCC_CR_HSEON;
+    RCC->CFGR2 = ((5 - 1) << RCC_CFGR2_PREDIV2_Pos
+                  | (10 - 2) << RCC_CFGR2_PLL2MUL_Pos
+                  | RCC_CFGR2_PREDIV1SRC | (5 - 1) << RCC_CFGR2_PREDIV1_Pos);
+    RCC->CR |= RCC_CR_PLL2ON;
+    while (!(RCC->CR & RCC_CR_PLL2RDY))
+        ;
+
+    // PLL = PREDIV1 * 12 = 120Mhz
+    uint32_t cfgr = (RCC_CFGR_PLLSRC | (12 - 2) << RCC_CFGR_PLLMULL_Pos
+                     | RCC_CFGR_PPRE1_DIV2 | RCC_CFGR_PPRE2_DIV2
+                     | RCC_CFGR_ADCPRE_DIV8);
+    RCC->CFGR = cfgr;
+    RCC->CR |= RCC_CR_PLLON;
+
+    // Set flash latency
+    FLASH->ACR = (2 << FLASH_ACR_LATENCY_Pos) | FLASH_ACR_PRFTBE;
+
+    // Wait for PLL lock
+    while (!(RCC->CR & RCC_CR_PLLRDY))
+        ;
+
+    // Switch system clock to PLL
+    RCC->CFGR = cfgr | RCC_CFGR_SW_PLL;
+    while ((RCC->CFGR & RCC_CFGR_SWS_Msk) != RCC_CFGR_SWS_PLL)
+        ;
+}
+
+#endif // CONFIG_MACH_GD32F305
 
 
 /****************************************************************
@@ -365,10 +413,14 @@ armcm_main(void)
     RCC->APB2ENR = 0;
 
     // Setup clocks
+#if CONFIG_MACH_GD32F305
+    clock_setup_gd32f305();
+#else
     if (CONFIG_MACH_N32G45x)
         clock_setup_n32g45x();
     else
         clock_setup();
+#endif
 
     // Disable JTAG to free PA15, PB3, PB4
     enable_pclock(AFIO_BASE);
