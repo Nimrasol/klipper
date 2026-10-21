@@ -43,6 +43,7 @@ src-y += generic/crc16_ccitt.c
 src-y += generic/armcm_boot.c generic/armcm_irq.c generic/armcm_reset.c
 src-$(CONFIG_MACH_STM32F0) += stm32/stm32f0.c ../lib/stm32f0/system_stm32f0xx.c
 src-$(CONFIG_MACH_STM32F1) += stm32/stm32f1.c ../lib/stm32f1/system_stm32f1xx.c
+src-$(CONFIG_STM32_SNAPMAKER_BOOTLOADER) += stm32/snapmaker_boot.c
 src-$(CONFIG_MACH_STM32F2) += stm32/stm32f4.c ../lib/stm32f2/system_stm32f2xx.c
 src-$(CONFIG_MACH_STM32F4) += stm32/stm32f4.c ../lib/stm32f4/system_stm32f4xx.c
 src-$(CONFIG_MACH_STM32F7) += stm32/stm32f7.c ../lib/stm32f7/system_stm32f7xx.c
