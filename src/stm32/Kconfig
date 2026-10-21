@@ -296,8 +296,11 @@ config STM32_DFU_ROM_ADDRESS
 
 choice
     prompt "Bootloader offset"
+    default STM32_FLASH_START_2800 if MACH_GD32F305
     config STM32_FLASH_START_2000
         bool "8KiB bootloader" if MACH_STM32F1 || MACH_STM32F070 || MACH_STM32G0 || MACH_STM32G4 || MACH_STM32F0x2
+    config STM32_FLASH_START_2800
+        bool "10KiB bootloader" if MACH_GD32F305
     config STM32_FLASH_START_5000
         bool "20KiB bootloader" if MACH_STM32F103
     config STM32_FLASH_START_7000
@@ -332,6 +335,7 @@ config FLASH_APPLICATION_ADDRESS
     default 0x8000800 if STM32_FLASH_START_800
     default 0x8001000 if STM32_FLASH_START_1000
     default 0x8002000 if STM32_FLASH_START_2000
+    default 0x8002800 if STM32_FLASH_START_2800
     default 0x8004000 if STM32_FLASH_START_4000
     default 0x8005000 if STM32_FLASH_START_5000
     default 0x8007000 if STM32_FLASH_START_7000
@@ -343,6 +347,17 @@ config FLASH_APPLICATION_ADDRESS
     default 0x8020000 if STM32_FLASH_START_20000
     default 0x8020200 if STM32_FLASH_START_20200
     default 0x8000000
+
+config STM32_SNAPMAKER_BOOTLOADER
+    bool "Support the Snapmaker J1 factory bootloader"
+    depends on MACH_GD32F305 && STM32_FLASH_START_2800
+    default y
+    help
+        The Snapmaker J1 factory bootloader only starts the
+        application if its update header in flash reports a normal
+        application state. Select this option to restore that state
+        at startup (as the stock firmware does) and to enter the
+        bootloader's update mode on a bootloader request.
 
 config ARMCM_RAM_VECTORTABLE
     bool
