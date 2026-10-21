@@ -356,8 +356,8 @@ config STM32_SNAPMAKER_BOOTLOADER
         The Snapmaker J1 factory bootloader only starts the
         application if its update header in flash reports a normal
         application state. Select this option to restore that state
-        at startup (as the stock firmware does) and to enter the
-        bootloader's update mode on a bootloader request.
+        at startup (as the stock firmware does) and to reset into the
+        bootloader on a bootloader request.
 
 config ARMCM_RAM_VECTORTABLE
     bool
